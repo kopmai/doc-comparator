@@ -1,6 +1,6 @@
 import streamlit as st
-from loader import DocumentLoader
-from comparator import TextComparator # อย่าลืมแก้ import ให้ตรงกับโครงสร้างไฟล์จริงของคุณนะ
+from modules.loader import DocumentLoader
+from modules.comparator import TextComparator
 import streamlit.components.v1 as components
 
 # --- 1. CONFIG & STYLES (ส่วนตั้งค่า UI เก็บไว้ที่เดิมได้ หรือจะแยกไฟล์ก็ได้ถ้าเยอะ) ---
@@ -92,3 +92,4 @@ if file1 and file2:
             st.error(f"เกิดข้อผิดพลาด: {e}")
 else:
     st.info("👈 กรุณาอัปโหลดไฟล์ที่เมนูด้านซ้ายเพื่อเริ่มเปรียบเทียบ")
+
