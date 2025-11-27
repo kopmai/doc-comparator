@@ -2,26 +2,50 @@ import streamlit as st
 from modules.comparator import TextComparator
 import streamlit.components.v1 as components
 
+def clear_code_inputs():
+    """ฟังก์ชันสำหรับล้างค่าในช่องกรอกโค้ด"""
+    st.session_state["code_input_1"] = ""
+    st.session_state["code_input_2"] = ""
+
 def render_code_compare_mode(mode_key):
     """
     ฟังก์ชันสำหรับแสดงผลหน้าจอเปรียบเทียบ Source Code
     รับค่า: mode_key (all หรือ diff_only) จาก Sidebar
     """
+    
+    # 1. Layout ช่องกรอกข้อมูล
     col_input1, col_input2 = st.columns(2)
     
     with col_input1:
         st.markdown("**Original Code**")
-        code1_raw = st.text_area("Original Code", height=300, label_visibility="collapsed", placeholder="วางโค้ดต้นฉบับที่นี่...")
+        # ใช้ key เพื่อผูกค่ากับ session_state (ทำให้เราสั่งล้างค่าได้)
+        code1_raw = st.text_area("Original Code", height=300, 
+                                 label_visibility="collapsed", 
+                                 placeholder="วางโค้ดต้นฉบับที่นี่...",
+                                 key="code_input_1")
     
     with col_input2:
         st.markdown("**Modified Code**")
-        code2_raw = st.text_area("Modified Code", height=300, label_visibility="collapsed", placeholder="วางโค้ดใหม่ที่นี่...")
+        code2_raw = st.text_area("Modified Code", height=300, 
+                                 label_visibility="collapsed", 
+                                 placeholder="วางโค้ดใหม่ที่นี่...",
+                                 key="code_input_2")
 
-    # ปุ่มกดเปรียบเทียบ
-    if st.button("🚀 เปรียบเทียบโค้ด (Compare Code)", type="primary", use_container_width=True):
+    # 2. ปุ่มกด (แบ่งคอลัมน์ให้ปุ่ม Clear อยู่ขวาสุด)
+    col_btn_compare, col_btn_clear = st.columns([5, 1])
+    
+    with col_btn_compare:
+        # ปุ่มเปรียบเทียบ (สีหลัก)
+        run_compare = st.button("🚀 เปรียบเทียบโค้ด (Compare Code)", type="primary", use_container_width=True)
+    
+    with col_btn_clear:
+        # ปุ่มล้างค่า (สีรอง) - เมื่อกดจะเรียกฟังก์ชัน clear_code_inputs
+        st.button("🧹 ล้างค่า", type="secondary", use_container_width=True, on_click=clear_code_inputs)
+
+    # 3. Logic การทำงานเมื่อกด Compare
+    if run_compare:
         if code1_raw or code2_raw:
             with st.spinner('⏳ กำลังประมวลผลโค้ด...'):
-                # แปลง Text ก้อนเดียว ให้เป็น List of lines
                 text1 = code1_raw.splitlines()
                 text2 = code2_raw.splitlines()
 
