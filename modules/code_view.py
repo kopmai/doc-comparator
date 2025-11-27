@@ -7,10 +7,16 @@ def clear_code_inputs():
     st.session_state["code_input_1"] = ""
     st.session_state["code_input_2"] = ""
 
+def move_modified_to_original():
+    """ฟังก์ชันย้ายโค้ดจากช่อง Modified ไปใส่ Original และเคลียร์ช่อง Modified"""
+    # เอาค่าจากช่องขวา ย้ายไปช่องซ้าย
+    st.session_state["code_input_1"] = st.session_state["code_input_2"]
+    # เคลียร์ช่องขวาให้ว่าง พร้อมรับโค้ดใหม่
+    st.session_state["code_input_2"] = ""
+
 def render_code_compare_mode(mode_key):
     """
     ฟังก์ชันสำหรับแสดงผลหน้าจอเปรียบเทียบ Source Code
-    รับค่า: mode_key (all หรือ diff_only) จาก Sidebar
     """
     
     # 1. Layout ช่องกรอกข้อมูล
@@ -18,7 +24,6 @@ def render_code_compare_mode(mode_key):
     
     with col_input1:
         st.markdown("**Original Code**")
-        # ใช้ key เพื่อผูกค่ากับ session_state (ทำให้เราสั่งล้างค่าได้)
         code1_raw = st.text_area("Original Code", height=300, 
                                  label_visibility="collapsed", 
                                  placeholder="วางโค้ดต้นฉบับที่นี่...",
@@ -31,16 +36,24 @@ def render_code_compare_mode(mode_key):
                                  placeholder="วางโค้ดใหม่ที่นี่...",
                                  key="code_input_2")
 
-    # 2. ปุ่มกด (แบ่งคอลัมน์ให้ปุ่ม Clear อยู่ขวาสุด)
-    col_btn_compare, col_btn_clear = st.columns([5, 1])
+    # 2. กลุ่มปุ่มกด (เพิ่มปุ่มตรงกลางมาอีก 1 อัน)
+    # แบ่งสัดส่วนเป็น [3, 2, 1] เพื่อให้ปุ่มหลักใหญ่สุด
+    col_btn_compare, col_btn_shift, col_btn_clear = st.columns([3, 2, 1])
     
     with col_btn_compare:
-        # ปุ่มเปรียบเทียบ (สีหลัก)
-        run_compare = st.button("🚀 เปรียบเทียบโค้ด (Compare Code)", type="primary", use_container_width=True)
+        # ปุ่มเปรียบเทียบ (Primary)
+        run_compare = st.button("🚀 เปรียบเทียบ (Compare)", type="primary", use_container_width=True)
+        
+    with col_btn_shift:
+        # ปุ่มย้ายโค้ด (Secondary)
+        st.button("⬅️ ใช้เป็นต้นฉบับใหม่", 
+                  help="ย้ายโค้ดจากช่อง Modified ไปใส่ Original เพื่อเปรียบเทียบต่อ",
+                  use_container_width=True, 
+                  on_click=move_modified_to_original)
     
     with col_btn_clear:
-        # ปุ่มล้างค่า (สีรอง) - เมื่อกดจะเรียกฟังก์ชัน clear_code_inputs
-        st.button("🧹 ล้างค่า", type="secondary", use_container_width=True, on_click=clear_code_inputs)
+        # ปุ่มล้างค่า (Secondary)
+        st.button("🧹 ล้างค่า", use_container_width=True, on_click=clear_code_inputs)
 
     # 3. Logic การทำงานเมื่อกด Compare
     if run_compare:
