@@ -1,7 +1,7 @@
 import streamlit as st
 from modules.loader import DocumentLoader
 from modules.comparator import TextComparator 
-from modules.code_view import render_code_compare_mode # <--- Import ไฟล์ใหม่มาใช้
+from modules.code_view import render_code_compare_mode
 import streamlit.components.v1 as components
 
 # --- 1. CONFIG & STYLES ---
@@ -55,15 +55,13 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 👁️ Options")
-    view_mode = st.radio("มุมมอง", ["แสดงทั้งหมด", "เฉพาะจุดต่าง"], index=1)
+    # --- CHANGE: เปลี่ยน index จาก 1 เป็น 0 เพื่อให้ default เป็น "แสดงทั้งหมด" ---
+    view_mode = st.radio("มุมมอง", ["แสดงทั้งหมด", "เฉพาะจุดต่าง"], index=0)
     mode_key = "diff_only" if view_mode == "เฉพาะจุดต่าง" else "all"
 
 # --- 3. MAIN LOGIC (Controller) ---
 
 if app_mode == "📄 เปรียบเทียบเอกสาร":
-    # --------------------------
-    # MODE 1: FILE COMPARE (เก็บไว้ใน Main หรือจะแยกอีกไฟล์ก็ได้)
-    # --------------------------
     if file1 and file2:
         with st.spinner('⏳ กำลังประมวลผลไฟล์...'):
             try:
@@ -103,7 +101,4 @@ if app_mode == "📄 เปรียบเทียบเอกสาร":
         st.info("👈 กรุณาอัปโหลดไฟล์ Word/PDF ที่เมนูด้านซ้าย")
 
 elif app_mode == "💻 เปรียบเทียบโค้ด (Source Code)":
-    # --------------------------
-    # MODE 2: CODE COMPARE (เรียกใช้ฟังก์ชันย่อย)
-    # --------------------------
     render_code_compare_mode(mode_key)
