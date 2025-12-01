@@ -14,10 +14,11 @@ def get_available_models(api_key):
     except:
         return []
 
-def get_ai_correction_stream(api_key, text, model_name, progress_bar=None, status_box=None):
+def get_ai_correction_stream(api_key, text, model_name, progress_bar, stream_box):
     try:
         genai.configure(api_key=api_key)
         
+        # ปิด Safety Filter (สำคัญมาก ถ้าไม่ปิด Stream อาจจะสะดุด)
         safety_settings = [
             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
             {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -37,36 +38,49 @@ def get_ai_correction_stream(api_key, text, model_name, progress_bar=None, statu
         {text}
         """
         
-        # --- FIX: ใช้โหมด stream=True เพื่อให้รับข้อมูลทีละนิด ---
+        # stream=True คือหัวใจสำคัญ
         response = model.generate_content(prompt, stream=True)
         
         full_text = ""
-        total_len = len(text) # ความยาวคร่าวๆ ของต้นฉบับ
+        total_len = len(text) if len(text) > 0 else 1
         
         for chunk in response:
             if chunk.text:
-                full_text += chunk.text
+                chunk_text = chunk.text
+                full_text += chunk_text
                 
-                # คำนวณ % คร่าวๆ (เทียบความยาวที่ได้ กับความยาวต้นฉบับ)
-                # ปกติแก้คำผิด ความยาวจะไม่ต่างจากเดิมมาก
-                if progress_bar:
-                    current_len = len(full_text)
-                    # สูตรคำนวณ: เอาความยาวที่ได้ / ความยาวต้นฉบับ (Max 95% เผื่อไว้ตอนจบ)
-                    progress = min(current_len / total_len, 0.95)
-                    progress_bar.progress(progress)
-                    
-                if status_box:
-                    status_box.caption(f"🤖 AI กำลังเขียน... (ได้มาแล้ว {len(full_text)} ตัวอักษร)")
+                # 1. อัปเดต % ในหลอด
+                current_len = len(full_text)
+                progress = min(current_len / total_len, 0.99)
+                progress_bar.progress(progress, text=f"กำลังพิมพ์... ({int(progress*100)}%)")
+                
+                # 2. อัปเดตข้อความสดๆ ในกล่อง (Live Preview)
+                # ใช้ markdown เพื่อให้สวยงาม
+                stream_box.markdown(
+                    f"""
+                    <div style="
+                        background-color: #f0f2f6; 
+                        padding: 10px; 
+                        border-radius: 5px; 
+                        font-family: monospace; 
+                        color: #555;
+                        font-size: 0.8rem;
+                        height: 150px; 
+                        overflow-y: auto;
+                        border: 1px dashed #ccc;">
+                        {full_text}
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
+                )
 
-        # จบแล้วปรับเป็น 100%
-        if progress_bar:
-            progress_bar.progress(1.0)
-            
+        # จบงาน: ปรับเป็น 100%
+        progress_bar.progress(1.0, text="เสร็จเรียบร้อย!")
         return full_text.strip()
         
     except Exception as e:
         if "429" in str(e):
-            return "API_ERROR: โควต้าเต็ม (Quota Exceeded) กรุณาเปลี่ยนโมเดล"
+            return "API_ERROR: โควต้าเต็ม (Quota Exceeded)"
         return f"API_ERROR: {str(e)}"
 
 def render_spell_check_mode():
@@ -88,9 +102,9 @@ def render_spell_check_mode():
             if model_options:
                 default_idx = 0
                 for i, name in enumerate(model_options):
+                    # Logic เลือก Default Model
                     if "flash" in name and "exp" not in name:
-                        default_idx = i
-                        break
+                        default_idx = i; break
                     elif "gemini-pro" in name and "exp" not in name:
                         default_idx = i
                 selected_model = st.selectbox("🤖 เลือก AI Model", model_options, index=default_idx)
@@ -107,17 +121,20 @@ def render_spell_check_mode():
 
         if btn_check and api_key and text_input and selected_model:
             
-            # --- ส่วนแสดง Progress Bar ---
-            progress_bar = st.progress(0, text="กำลังเตรียมการ...")
-            status_box = st.empty() # กล่องข้อความเล็กๆ ใต้หลอดโหลด
+            # สร้างพื้นที่สำหรับ Progress Bar และ Live Text
+            st.caption("🚀 สถานะการทำงาน:")
+            progress_bar = st.progress(0, text="กำลังเชื่อมต่อ AI...")
+            stream_box = st.empty() # กล่องเปล่ารอใส่ข้อความสด
             
             try:
-                # เรียกฟังก์ชันแบบ Stream
-                corrected_text = get_ai_correction_stream(api_key, text_input, selected_model, progress_bar, status_box)
+                # เรียกฟังก์ชัน Stream
+                corrected_text = get_ai_correction_stream(api_key, text_input, selected_model, progress_bar, stream_box)
                 
-                # โหลดเสร็จแล้ว ล้างหลอดทิ้ง เพื่อความสะอาดตา
-                progress_bar.empty()
-                status_box.empty()
+                # เมื่อเสร็จแล้ว ล้างกล่อง Preview ทิ้ง (จะได้โชว์ Diff สวยๆ แทน)
+                stream_box.empty() 
+                # หรือถ้าอยากเก็บไว้ก็ลบบรรทัดบนทิ้งครับ
+                
+                progress_bar.empty() # ล้างหลอดโหลด
 
                 if corrected_text.startswith("API_ERROR:"):
                     st.error("เกิดข้อผิดพลาดในการเชื่อมต่อ AI:")
@@ -138,5 +155,6 @@ def render_spell_check_mode():
                     
                     with st.expander("📄 ดูข้อความที่แก้แล้ว (Plain Text)"):
                         st.code(corrected_text, language=None)
+                        
             except Exception as e:
-                st.error(f"เกิดข้อผิดพลาดที่ไม่คาดคิด: {e}")
+                st.error(f"เกิดข้อผิดพลาด: {e}")
