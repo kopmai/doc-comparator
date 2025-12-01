@@ -3,11 +3,9 @@ import google.generativeai as genai
 from modules.comparator import TextComparator
 
 def get_ai_correction(api_key, text):
-    """ส่งข้อความไปให้ Gemini ช่วยแก้คำผิด"""
     try:
         genai.configure(api_key=api_key)
-        
-        # ใช้โมเดล gemini-1.5-flash (ไลบรารีใหม่จะรู้จักตัวนี้แน่นอน)
+        # ลองใช้ Flash เหมือนเดิม (เพราะไลบรารีเราใหม่แล้ว)
         model = genai.GenerativeModel('gemini-1.5-flash')
         
         prompt = f"""
@@ -19,7 +17,6 @@ def get_ai_correction(api_key, text):
         Text to correct:
         {text}
         """
-        
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
@@ -30,9 +27,6 @@ def render_spell_check_mode():
     
     with col_setup:
         st.markdown("### 1. ใส่เนื้อหา (Input)")
-        
-        # เช็คเวอร์ชันไลบรารี (Debugging)
-        # บรรทัดนี้จะโชว์ให้เห็นเลยว่า Server ใช้เวอร์ชันไหนอยู่
         st.caption(f"System Info: google-generativeai v{genai.__version__}")
 
         api_key = None
@@ -41,13 +35,29 @@ def render_spell_check_mode():
             st.success("✅ เชื่อมต่อกับ API Key อัตโนมัติแล้ว")
         else:
             api_key = st.text_input("🔑 Gemini API Key", type="password", help="รับ Key ฟรีได้ที่ aistudio.google.com")
-            if not api_key:
-                st.warning("⚠️ ไม่พบ API Key ใน Secrets กรุณากรอกเอง")
         
         st.markdown("---")
         text_input = st.text_area("✍️ ต้นฉบับ (Original Text)", height=400, placeholder="วางข้อความที่ต้องการตรวจทานที่นี่...")
-
         btn_check = st.button("✨ ให้ AI ตรวจทาน (AI Proofread)", type="primary", use_container_width=True, disabled=(not api_key or not text_input))
+
+        # --- เพิ่มส่วน Debug ---
+        with st.expander("🛠️ Debug API Key (กดเมื่อ Error)"):
+            if st.button("Test List Models"):
+                if api_key:
+                    try:
+                        genai.configure(api_key=api_key)
+                        st.write("โมเดลที่ Key นี้มองเห็น:")
+                        found_models = []
+                        for m in genai.list_models():
+                            found_models.append(m.name)
+                            st.code(m.name)
+                        if not found_models:
+                            st.error("❌ Key นี้มองไม่เห็นโมเดลใดๆ เลย (กรุณาสร้าง Key ใหม่)")
+                    except Exception as e:
+                        st.error(f"❌ Key นี้ใช้ไม่ได้: {e}")
+                else:
+                    st.warning("ใส่ Key ก่อนกด Test")
+        # --------------------
 
     with col_result:
         st.markdown("### 2. ผลการตรวจทาน (AI Suggestion)")
@@ -58,7 +68,7 @@ def render_spell_check_mode():
                 
                 if "Error:" in corrected_text:
                     st.error(corrected_text)
-                    st.error("คำแนะนำ: ลองกด Reboot App อีกครั้ง เพื่อให้ระบบอัปเดตไลบรารี")
+                    st.warning("คำแนะนำ: ลองกดที่ 'Debug API Key' ด้านซ้ายดูครับ ถ้าไม่เจอชื่อ models/gemini-1.5-flash แสดงว่า Key นี้ใช้ไม่ได้")
                 else:
                     original_lines = text_input.splitlines()
                     corrected_lines = corrected_text.splitlines()
@@ -67,15 +77,8 @@ def render_spell_check_mode():
                     raw_html = comparator.generate_diff_html(original_lines, corrected_lines, mode="all")
                     final_html = comparator.get_final_display_html(raw_html)
                     
-                    st.success("✅ ตรวจเสร็จเรียบร้อย! (ซ้าย: ต้นฉบับ | ขวา: ที่ AI แก้ให้)")
-                    
+                    st.success("✅ ตรวจเสร็จเรียบร้อย!")
                     st.markdown('<div class="css-card">', unsafe_allow_html=True)
                     import streamlit.components.v1 as components
                     components.html(final_html, height=600, scrolling=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    with st.expander("📄 ดูข้อความที่แก้แล้ว (Plain Text)"):
-                        st.code(corrected_text, language=None)
-        
-        elif not btn_check:
-            st.info("👈 กดปุ่มเพื่อเริ่มตรวจ")
