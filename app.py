@@ -1,14 +1,17 @@
 import streamlit as st
+# --- IMPORT ของใหม่ ---
+from streamlit_option_menu import option_menu
+# --------------------
 from modules.loader import DocumentLoader
 from modules.comparator import TextComparator 
 from modules.code_view import render_code_compare_mode
-# Import ไฟล์ใหม่
 from modules.spell_check_view import render_spell_check_mode
 import streamlit.components.v1 as components
 
 # --- 1. CONFIG & STYLES ---
 st.set_page_config(layout="wide", page_title="Pro Document Comparator", page_icon="⚖️")
 
+# CSS เดิมยังเก็บไว้ เพื่อความสวยงามของส่วนอื่นๆ
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap');
@@ -36,22 +39,37 @@ st.markdown("""
         .match-badge { background-color: #2b5876; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; }
         section[data-testid="stSidebar"] { top: 60px !important; background-color: #f8f9fa; }
         textarea { font-family: 'JetBrains Mono', monospace !important; font-size: 14px !important; }
+        
+        /* ปรับแต่งเพิ่มเติมสำหรับ option menu ให้ดูคลีนขึ้น */
+        .nav-link-selected { font-weight: 600 !important; }
     </style>
     <div class="top-navbar"><div class="navbar-logo"><span>⚖️</span> DocCompare <span style="font-size: 14px; color: #adb5bd; margin-left: 10px; font-weight: 300;">| ระบบเปรียบเทียบเอกสารและโค้ด</span></div></div>
 """, unsafe_allow_html=True)
 
-# --- 2. SIDEBAR ---
+# --- 2. SIDEBAR (MENU ใหม่!) ---
 with st.sidebar:
-    st.markdown("### 🛠️ เครื่องมือ (Tools)")
-    # เพิ่มเมนูที่ 3
-    app_mode = st.radio("เลือกโหมดการทำงาน", 
-                        ["📄 เปรียบเทียบเอกสาร", 
-                         "💻 เปรียบเทียบโค้ด (Source Code)",
-                         "📝 ตรวจการสะกดคำ (Spell Check)"])
+    
+    # --- ใช้ option_menu แทน st.radio ---
+    # เราใช้ไอคอนจาก Bootstrap Icons (เช่น 'file-earmark-text', 'code-slash')
+    app_mode = option_menu(
+        menu_title="เมนูหลัก (Menu)",  # ชื่อหัวข้อเมนู
+        options=["เปรียบเทียบเอกสาร", "เปรียบเทียบโค้ด", "ตรวจการสะกดคำ (AI)"], # ตัวเลือก
+        icons=['file-earmark-diff', 'code-slash', 'spellcheck'], # ไอคอนเช้าคู่กัน
+        menu_icon="cast", # ไอคอนตรงหัวข้อ
+        default_index=0, # เลือกอันแรกเป็นค่าเริ่มต้น
+        styles={
+            "container": {"padding": "5px", "background-color": "#f8f9fa"},
+            "icon": {"color": "#2b5876", "font-size": "20px"}, 
+            "nav-link": {"font-size": "16px", "text-align": "left", "margin":"5px", "--hover-color": "#eef0f2"},
+            "nav-link-selected": {"background-color": "#2b5876", "color": "white"}, # สีตอนเลือก
+        }
+    )
+    # ------------------------------------
     
     st.markdown("---")
     
-    if app_mode == "📄 เปรียบเทียบเอกสาร":
+    # --- ปรับ IF condition ให้ตรงกับชื่อเมนูใหม่ ---
+    if app_mode == "เปรียบเทียบเอกสาร":
         st.markdown("### 📂 Upload Files")
         file1 = st.file_uploader("ต้นฉบับ (Original)", type=["docx", "pdf"])
         file2 = st.file_uploader("ฉบับแก้ไข (Modified)", type=["docx", "pdf"])
@@ -60,17 +78,18 @@ with st.sidebar:
         view_mode = st.radio("มุมมอง", ["แสดงทั้งหมด", "เฉพาะจุดต่าง"], index=0)
         mode_key = "diff_only" if view_mode == "เฉพาะจุดต่าง" else "all"
         
-    elif app_mode == "💻 เปรียบเทียบโค้ด (Source Code)":
+    elif app_mode == "เปรียบเทียบโค้ด":
         st.info("💡 แปะโค้ดที่ต้องการเปรียบเทียบลงในช่อง Text Area ด้านขวาได้เลย")
-        mode_key = "all" # Default Code Mode
+        mode_key = "all"
 
-    elif app_mode == "📝 ตรวจการสะกดคำ (Spell Check)":
-        st.info("💡 วางข้อความภาษาไทย หรืออังกฤษ ระบบจะ Highlight คำที่น่าจะสะกดผิดให้")
+    elif app_mode == "ตรวจการสะกดคำ (AI)":
+        st.info("💡 ใช้ AI ช่วยตรวจทานภาษาไทย/อังกฤษ พร้อมแก้คำผิดและจัดรูปประโยค")
 
-# --- 3. MAIN LOGIC ---
+# --- 3. MAIN LOGIC (Controller) ---
 
-if app_mode == "📄 เปรียบเทียบเอกสาร":
-    # ... (Logic เดิมของ Document Compare) ...
+# --- ปรับ IF condition ให้ตรงกับชื่อเมนูใหม่ ---
+if app_mode == "เปรียบเทียบเอกสาร":
+    # (Logic เดิม)
     if file1 and file2:
         with st.spinner('⏳ กำลังประมวลผลไฟล์...'):
             try:
@@ -109,12 +128,10 @@ if app_mode == "📄 เปรียบเทียบเอกสาร":
     else:
         st.info("👈 กรุณาอัปโหลดไฟล์ Word/PDF ที่เมนูด้านซ้าย")
 
-elif app_mode == "💻 เปรียบเทียบโค้ด (Source Code)":
-    # ... (Logic เดิมของ Code Compare) ...
-    # เราส่ง mode_key เข้าไป แต่จริงๆ ใน Code View เรา hardcode ปุ่มไว้แล้ว
-    # หรือจะแก้ Code View ให้รับ view_mode ก็ได้ แต่นี่ใช้แบบเดิมไปก่อนครับ
-    render_code_compare_mode("all") 
+elif app_mode == "เปรียบเทียบโค้ด":
+    # เรียก Module Code
+    render_code_compare_mode("all")
 
-elif app_mode == "📝 ตรวจการสะกดคำ (Spell Check)":
-    # เรียกใช้ฟังก์ชันใหม่
+elif app_mode == "ตรวจการสะกดคำ (AI)":
+    # เรียก Module AI Spell Check
     render_spell_check_mode()
