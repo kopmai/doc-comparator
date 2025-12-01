@@ -1,7 +1,5 @@
 import streamlit as st
-# --- IMPORT ของใหม่ ---
 from streamlit_option_menu import option_menu
-# --------------------
 from modules.loader import DocumentLoader
 from modules.comparator import TextComparator 
 from modules.code_view import render_code_compare_mode
@@ -11,7 +9,6 @@ import streamlit.components.v1 as components
 # --- 1. CONFIG & STYLES ---
 st.set_page_config(layout="wide", page_title="Pro Document Comparator", page_icon="⚖️")
 
-# CSS เดิมยังเก็บไว้ เพื่อความสวยงามของส่วนอื่นๆ
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap');
@@ -40,35 +37,31 @@ st.markdown("""
         section[data-testid="stSidebar"] { top: 60px !important; background-color: #f8f9fa; }
         textarea { font-family: 'JetBrains Mono', monospace !important; font-size: 14px !important; }
         
-        /* ปรับแต่งเพิ่มเติมสำหรับ option menu ให้ดูคลีนขึ้น */
         .nav-link-selected { font-weight: 600 !important; }
     </style>
     <div class="top-navbar"><div class="navbar-logo"><span>⚖️</span> DocCompare <span style="font-size: 14px; color: #adb5bd; margin-left: 10px; font-weight: 300;">| ระบบเปรียบเทียบเอกสารและโค้ด</span></div></div>
 """, unsafe_allow_html=True)
 
-# --- 2. SIDEBAR (MENU ใหม่!) ---
+# --- 2. SIDEBAR (MENU) ---
 with st.sidebar:
     
-    # --- ใช้ option_menu แทน st.radio ---
-    # เราใช้ไอคอนจาก Bootstrap Icons (เช่น 'file-earmark-text', 'code-slash')
+    # --- เปลี่ยนชื่อหัวข้อตรงนี้ครับ ---
     app_mode = option_menu(
-        menu_title="เมนูหลัก (Menu)",  # ชื่อหัวข้อเมนู
-        options=["เปรียบเทียบเอกสาร", "เปรียบเทียบโค้ด", "ตรวจการสะกดคำ (AI)"], # ตัวเลือก
-        icons=['file-earmark-diff', 'code-slash', 'spellcheck'], # ไอคอนเช้าคู่กัน
-        menu_icon="cast", # ไอคอนตรงหัวข้อ
-        default_index=0, # เลือกอันแรกเป็นค่าเริ่มต้น
+        menu_title="รายการระบบ",  # <--- แก้ไขแล้ว
+        options=["เปรียบเทียบเอกสาร", "เปรียบเทียบโค้ด", "ตรวจการสะกดคำ (AI)"],
+        icons=['file-earmark-diff', 'code-slash', 'spellcheck'],
+        menu_icon="cast",
+        default_index=0,
         styles={
             "container": {"padding": "5px", "background-color": "#f8f9fa"},
             "icon": {"color": "#2b5876", "font-size": "20px"}, 
             "nav-link": {"font-size": "16px", "text-align": "left", "margin":"5px", "--hover-color": "#eef0f2"},
-            "nav-link-selected": {"background-color": "#2b5876", "color": "white"}, # สีตอนเลือก
+            "nav-link-selected": {"background-color": "#2b5876", "color": "white"},
         }
     )
-    # ------------------------------------
     
     st.markdown("---")
     
-    # --- ปรับ IF condition ให้ตรงกับชื่อเมนูใหม่ ---
     if app_mode == "เปรียบเทียบเอกสาร":
         st.markdown("### 📂 Upload Files")
         file1 = st.file_uploader("ต้นฉบับ (Original)", type=["docx", "pdf"])
@@ -87,9 +80,7 @@ with st.sidebar:
 
 # --- 3. MAIN LOGIC (Controller) ---
 
-# --- ปรับ IF condition ให้ตรงกับชื่อเมนูใหม่ ---
 if app_mode == "เปรียบเทียบเอกสาร":
-    # (Logic เดิม)
     if file1 and file2:
         with st.spinner('⏳ กำลังประมวลผลไฟล์...'):
             try:
@@ -129,9 +120,7 @@ if app_mode == "เปรียบเทียบเอกสาร":
         st.info("👈 กรุณาอัปโหลดไฟล์ Word/PDF ที่เมนูด้านซ้าย")
 
 elif app_mode == "เปรียบเทียบโค้ด":
-    # เรียก Module Code
     render_code_compare_mode("all")
 
 elif app_mode == "ตรวจการสะกดคำ (AI)":
-    # เรียก Module AI Spell Check
     render_spell_check_mode()
