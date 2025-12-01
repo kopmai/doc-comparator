@@ -7,9 +7,8 @@ def get_ai_correction(api_key, text):
     try:
         genai.configure(api_key=api_key)
         
-        # --- FIX: เปลี่ยนจาก 'gemini-1.5-flash' เป็น 'gemini-pro' ---
-        # gemini-pro เป็นรุ่นมาตรฐานที่ทำงานได้กับ library ทุกเวอร์ชัน
-        model = genai.GenerativeModel('gemini-pro')
+        # ใช้โมเดล gemini-1.5-flash (ไลบรารีใหม่จะรู้จักตัวนี้แน่นอน)
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
         prompt = f"""
         Act as a professional proofreader. 
@@ -32,7 +31,10 @@ def render_spell_check_mode():
     with col_setup:
         st.markdown("### 1. ใส่เนื้อหา (Input)")
         
-        # ดึง Key จาก Secrets ก่อน
+        # เช็คเวอร์ชันไลบรารี (Debugging)
+        # บรรทัดนี้จะโชว์ให้เห็นเลยว่า Server ใช้เวอร์ชันไหนอยู่
+        st.caption(f"System Info: google-generativeai v{genai.__version__}")
+
         api_key = None
         if "GEMINI_API_KEY" in st.secrets:
             api_key = st.secrets["GEMINI_API_KEY"]
@@ -45,7 +47,6 @@ def render_spell_check_mode():
         st.markdown("---")
         text_input = st.text_area("✍️ ต้นฉบับ (Original Text)", height=400, placeholder="วางข้อความที่ต้องการตรวจทานที่นี่...")
 
-        # ปุ่มกดตรวจ
         btn_check = st.button("✨ ให้ AI ตรวจทาน (AI Proofread)", type="primary", use_container_width=True, disabled=(not api_key or not text_input))
 
     with col_result:
@@ -57,12 +58,12 @@ def render_spell_check_mode():
                 
                 if "Error:" in corrected_text:
                     st.error(corrected_text)
+                    st.error("คำแนะนำ: ลองกด Reboot App อีกครั้ง เพื่อให้ระบบอัปเดตไลบรารี")
                 else:
                     original_lines = text_input.splitlines()
                     corrected_lines = corrected_text.splitlines()
                     
                     comparator = TextComparator()
-                    # ใช้โหมด all เพื่อให้เห็นบริบทชัดเจน
                     raw_html = comparator.generate_diff_html(original_lines, corrected_lines, mode="all")
                     final_html = comparator.get_final_display_html(raw_html)
                     
