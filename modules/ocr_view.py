@@ -4,6 +4,7 @@ import fitz  # PyMuPDF
 from PIL import Image
 import io
 from docx import Document
+import re  # <--- เพิ่ม RE เพื่อใช้จัดการตัดคำขยะ
 
 def get_available_models(api_key):
     try:
@@ -13,26 +14,57 @@ def get_available_models(api_key):
     except:
         return []
 
+def clean_ocr_text(text):
+    """
+    ฟังก์ชันทำความสะอาดข้อความ: ลบเส้นตาราง เส้นปะ หรือ Markdown Table ที่รกๆ ออก
+    """
+    if not text: return ""
+    
+    lines = text.split('\n')
+    cleaned_lines = []
+    
+    for line in lines:
+        # Regex: ตรวจสอบว่าบรรทัดนี้ มีแต่ตัวอักษรพวกนี้หรือไม่? (-, _, =, |, :, +, space)
+        # ถ้าทั้งบรรทัดมีแต่พวกนี้ และมีความยาวเกิน 3 ตัวอักษร -> ถือว่าเป็นเส้นตาราง -> ลบทิ้ง
+        if re.match(r'^[\s\|\-\_\=\:\+]{3,}$', line.strip()):
+            continue # ข้ามบรรทัดนี้ไปเลย (ลบทิ้ง)
+            
+        cleaned_lines.append(line)
+        
+    return '\n'.join(cleaned_lines)
+
 def ocr_single_image(api_key, image, model_name):
     """ส่งรูปภาพ 1 รูป ไปให้ AI แกะข้อความ"""
     try:
         genai.configure(api_key=api_key)
+        
+        # Safety Settings
         safety_settings = [
             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
             {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
             {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
             {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
         ]
+        
         model = genai.GenerativeModel(model_name, safety_settings=safety_settings)
         
+        # ปรับ Prompt ให้ AI พยายามส่ง Plain Text มากขึ้น
         prompt = """
         Extract all text from this image perfectly.
-        - Preserve the layout (paragraphs, tables) as much as possible.
+        - Analyze the layout carefully.
+        - If there is a table, preserve the data structure but DO NOT print ASCII borders or Markdown divider lines (like |---|). 
+        - Just use spacing or tabs to separate columns if possible.
         - If Thai text is present, ensure correct spelling.
-        - Return ONLY the content, no conversational text.
         """
+        
         response = model.generate_content([prompt, image])
-        return response.text
+        raw_text = response.text
+        
+        # --- CLEANING STEP: ล้างเส้นปะทิ้งก่อนส่งกลับ ---
+        final_text = clean_ocr_text(raw_text)
+        
+        return final_text
+        
     except Exception as e:
         return f"[Error on this page: {str(e)}]"
 
@@ -52,7 +84,7 @@ def create_word_docx(text_list):
     return buffer
 
 def render_ocr_mode():
-    # --- FIX: ย้าย Session State Init มาไว้ในฟังก์ชัน (รับประกันว่าทำงานชัวร์) ---
+    # --- Session State ---
     if 'ocr_results' not in st.session_state:
         st.session_state['ocr_results'] = [] 
     if 'ocr_images' not in st.session_state:
@@ -61,9 +93,8 @@ def render_ocr_mode():
         st.session_state['current_page_index'] = 0
     if 'processed_file_id' not in st.session_state:
         st.session_state['processed_file_id'] = None
-    # -----------------------------------------------------------------------
 
-    # 1. ส่วนตั้งค่า (Top Expander)
+    # 1. ส่วนตั้งค่า
     with st.expander("⚙️ ตั้งค่าและอัปโหลดไฟล์ (Settings & Upload)", expanded=True):
         col_key, col_model = st.columns([1, 1])
         
@@ -88,9 +119,7 @@ def render_ocr_mode():
 
         uploaded_file = st.file_uploader("📄 อัปโหลดไฟล์ PDF (ระบบจะอ่านทุกหน้า)", type=["pdf"])
 
-        # ปุ่มเริ่มทำงาน (Start)
         if uploaded_file and api_key and selected_model:
-            # เช็คว่าไฟล์เปลี่ยนใหม่ไหม
             if st.session_state['processed_file_id'] != uploaded_file.file_id:
                 st.session_state['ocr_results'] = []
                 st.session_state['ocr_images'] = []
@@ -99,7 +128,6 @@ def render_ocr_mode():
 
             if st.button("🚀 เริ่มประมวลผล (Start Processing All Pages)", type="primary"):
                 
-                # Step A: แปลง PDF เป็นรูป
                 with st.spinner("📦 กำลังแยกหน้า PDF เป็นรูปภาพ..."):
                     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
                     temp_images = []
@@ -113,20 +141,20 @@ def render_ocr_mode():
                     st.session_state['ocr_results'] = [""] * len(temp_images)
                     st.session_state['processed_file_id'] = uploaded_file.file_id
 
-                # Step B: OCR ทีละหน้า
                 progress_bar = st.progress(0, text="กำลังเริ่ม OCR...")
                 total_pages = len(st.session_state['ocr_images'])
                 
                 for i, img in enumerate(st.session_state['ocr_images']):
                     progress_bar.progress((i) / total_pages, text=f"🔍 กำลังอ่านหน้า {i+1}/{total_pages}...")
+                    
+                    # เรียกฟังก์ชันที่มีการ Clean แล้ว
                     text_result = ocr_single_image(api_key, img, selected_model)
                     st.session_state['ocr_results'][i] = text_result
                 
                 progress_bar.progress(1.0, text="เสร็จเรียบร้อย!")
                 st.rerun()
 
-    # 2. ส่วนแสดงผล (Synced View)
-    # ใช้ .get() เพื่อป้องกัน KeyError หรือเช็คว่ามีค่าไหม
+    # 2. ส่วนแสดงผล
     if st.session_state.get('processed_file_id') and st.session_state.get('ocr_results'):
         
         st.markdown("---")
