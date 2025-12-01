@@ -4,10 +4,11 @@ from modules.loader import DocumentLoader
 from modules.comparator import TextComparator 
 from modules.code_view import render_code_compare_mode
 from modules.spell_check_view import render_spell_check_mode
+# Import โมดูลใหม่
+from modules.ocr_view import render_ocr_mode
 import streamlit.components.v1 as components
 
 # --- 1. CONFIG & STYLES ---
-# เปลี่ยนชื่อตรง Tab Browser
 st.set_page_config(layout="wide", page_title="Smart Document - Intelligent Platform", page_icon="📑")
 
 st.markdown("""
@@ -19,26 +20,32 @@ st.markdown("""
         
         header[data-testid="stHeader"] { background-color: transparent !important; z-index: 999999 !important; }
         div[data-testid="stDecoration"] { display: none; }
-        .block-container { padding-top: 75px !important; padding-bottom: 1rem !important; }
+        
+        /* --- FIX: ปรับระยะขอบบนให้น้อยลง (ชิดบนสุดๆ) --- */
+        .block-container { 
+            padding-top: 50px !important; /* ลดจาก 75px */
+            padding-bottom: 1rem !important; 
+        }
+        /* ------------------------------------------- */
         
         .top-navbar {
-            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            position: fixed; top: 0; left: 0; right: 0; height: 50px; /* ลดความสูง Navbar นิดนึง */
             background-color: #ffffff; border-bottom: 1px solid #e0e0e0;
             z-index: 99999; display: flex; align-items: center; padding-left: 80px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
         .navbar-logo { 
-            font-size: 24px; 
+            font-size: 20px; /* ลดขนาดฟอนต์นิดนึงให้ดูคลีน */
             font-weight: 700; 
-            color: #0d6efd; /* เปลี่ยนสี Logo เป็นสีฟ้าให้ดู Smart */
+            color: #0d6efd;
             display: flex; 
             align-items: center; 
             gap: 10px; 
             letter-spacing: 0.5px;
         }
         .navbar-tagline {
-            font-size: 14px; 
+            font-size: 13px; 
             color: #6c757d; 
             margin-left: 15px; 
             font-weight: 300;
@@ -52,9 +59,11 @@ st.markdown("""
         
         .css-card { background-color: white; padding: 1rem 1.5rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef0f2; margin-top: -15px; }
         .match-badge { background-color: #0d6efd; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; }
-        section[data-testid="stSidebar"] { top: 60px !important; background-color: #f8f9fa; }
-        textarea { font-family: 'JetBrains Mono', monospace !important; font-size: 14px !important; }
         
+        /* ปรับ Sidebar ให้ชิดบนตาม Navbar */
+        section[data-testid="stSidebar"] { top: 50px !important; background-color: #f8f9fa; }
+        
+        textarea { font-family: 'JetBrains Mono', monospace !important; font-size: 14px !important; }
         .nav-link-selected { font-weight: 600 !important; }
     </style>
     
@@ -79,13 +88,12 @@ with st.sidebar:
             "container": {"padding": "5px", "background-color": "#f8f9fa"},
             "icon": {"color": "#0d6efd", "font-size": "18px"}, 
             "nav-link": {"font-size": "15px", "text-align": "left", "margin":"5px", "--hover-color": "#eef0f2"},
-            "nav-link-selected": {"background-color": "#0d6efd", "color": "white"}, # ปรับธีมเป็นสีฟ้า Smart Blue
+            "nav-link-selected": {"background-color": "#0d6efd", "color": "white"}, 
         }
     )
     
     st.markdown("---")
     
-    # --- Contextual Sidebar Content ---
     if app_mode == "เปรียบเทียบเอกสาร":
         st.markdown("### 📂 Upload Files")
         file1 = st.file_uploader("ต้นฉบับ (Original)", type=["docx", "pdf"])
@@ -103,11 +111,12 @@ with st.sidebar:
         st.info("💡 **Tips:** ใช้ AI ช่วยตรวจสอบความถูกต้องของไวยากรณ์และรูปประโยค")
     
     elif app_mode == "OCR แปลงภาพเป็นข้อความ":
-        st.warning("🚧 **Coming Soon:** ระบบแปลงภาพสแกนเป็นข้อความ (AI OCR) กำลังอยู่ในระหว่างการพัฒนา")
+        st.info("💡 **Tips:** ใช้ Gemini Vision ในการอ่านข้อความจากภาพ/PDF (รองรับตารางและลายมือ)")
 
 # --- 3. MAIN LOGIC (Controller) ---
 
 if app_mode == "เปรียบเทียบเอกสาร":
+    # (Logic เดิม)
     if file1 and file2:
         with st.spinner('⏳ กำลังประมวลผลไฟล์...'):
             try:
@@ -153,12 +162,5 @@ elif app_mode == "ตรวจการสะกดคำ (AI)":
     render_spell_check_mode()
 
 elif app_mode == "OCR แปลงภาพเป็นข้อความ":
-    # หน้า Placeholder สำหรับ OCR
-    st.markdown("""
-        <div style="text-align: center; padding: 50px; background-color: white; border-radius: 10px; border: 2px dashed #ddd;">
-            <h1>📷 AI OCR System</h1>
-            <h3 style="color: #888;">Coming Soon...</h3>
-            <p>ระบบแปลงภาพเอกสารเป็นข้อความด้วย AI ความแม่นยำสูง</p>
-            <p><i>(เตรียมพบกันในเวอร์ชันถัดไป ของ Smart Document)</i></p>
-        </div>
-    """, unsafe_allow_html=True)
+    # เรียกใช้ Module ใหม่
+    render_ocr_mode()
