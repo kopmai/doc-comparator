@@ -15,19 +15,16 @@ def get_available_models(api_key):
         return []
 
 def clean_ocr_text(text):
-    """ฟังก์ชันลบเส้นตาราง/เส้นปะ"""
     if not text: return ""
     lines = text.split('\n')
     cleaned_lines = []
     for line in lines:
-        # ลบบรรทัดที่มีแต่ขีด เส้นตั้ง หรือเครื่องหมายตาราง เกิน 3 ตัวอักษร
         if re.match(r'^[\s\|\-\_\=\:\+]{3,}$', line.strip()):
             continue
         cleaned_lines.append(line)
     return '\n'.join(cleaned_lines)
 
 def ocr_single_image(api_key, image, model_name):
-    """ส่งรูปภาพไปให้ AI แกะข้อความ"""
     try:
         genai.configure(api_key=api_key)
         safety_settings = [
@@ -54,24 +51,27 @@ def ocr_single_image(api_key, image, model_name):
 def create_word_docx(text_list):
     """สร้างไฟล์ Word"""
     doc = Document()
-    doc.add_heading('OCR Result - Smart Document', 0)
+    
+    # --- FIX: เอาหัวกระดาษ "OCR Result..." ออก ---
+    # doc.add_heading('OCR Result - Smart Document', 0) <-- ลบทิ้ง
+    
     for i, text in enumerate(text_list):
+        # เริ่มต้นด้วยหัวข้อ Page X เลย
         doc.add_heading(f'Page {i+1}', level=1)
         doc.add_paragraph(text)
         doc.add_page_break()
+        
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     return buffer
 
 def render_ocr_mode():
-    # --- Session State ---
     if 'ocr_results' not in st.session_state: st.session_state['ocr_results'] = [] 
     if 'ocr_images' not in st.session_state: st.session_state['ocr_images'] = []
     if 'current_page_index' not in st.session_state: st.session_state['current_page_index'] = 0
     if 'processed_file_id' not in st.session_state: st.session_state['processed_file_id'] = None
 
-    # 1. ส่วนตั้งค่า
     with st.expander("⚙️ ตั้งค่าและอัปโหลดไฟล์ (Settings & Upload)", expanded=True):
         col_key, col_model = st.columns([1, 1])
         with col_key:
@@ -123,15 +123,11 @@ def render_ocr_mode():
                 progress_bar.progress(1.0, text="เสร็จเรียบร้อย!")
                 st.rerun()
 
-    # 2. ส่วนแสดงผล
     if st.session_state.get('processed_file_id') and st.session_state.get('ocr_results'):
-        
         st.markdown("---")
-        
-        # --- Controller Bar (ย้ายปุ่ม Download มาไว้บรรทัดนี้) ---
         total_pages = len(st.session_state['ocr_images'])
         
-        # แบ่งคอลัมน์ใหม่: [ปุ่มก่อนหน้า, ตัวบอกหน้า, ปุ่มถัดไป, ปุ่มดาวน์โหลด]
+        # Controller Bar
         col_prev, col_nav_info, col_next, col_download = st.columns([1, 2, 1, 1.5])
         
         with col_prev:
@@ -140,11 +136,7 @@ def render_ocr_mode():
                 st.rerun()
 
         with col_nav_info:
-            # จัดกึ่งกลางแนวตั้งให้สวยงาม
-            st.markdown(
-                f"<div style='text-align: center; padding-top: 5px; font-weight: bold;'>📄 หน้า {st.session_state['current_page_index'] + 1} / {total_pages}</div>", 
-                unsafe_allow_html=True
-            )
+            st.markdown(f"<div style='text-align: center; padding-top: 5px; font-weight: bold;'>📄 หน้า {st.session_state['current_page_index'] + 1} / {total_pages}</div>", unsafe_allow_html=True)
 
         with col_next:
             if st.button("ถัดไป ➡️", use_container_width=True, disabled=(st.session_state['current_page_index'] == total_pages - 1)):
@@ -152,7 +144,6 @@ def render_ocr_mode():
                 st.rerun()
                 
         with col_download:
-            # สร้างไฟล์ Word รอไว้เลย
             docx_file = create_word_docx(st.session_state['ocr_results'])
             st.download_button(
                 label="💾 Export Word",
@@ -163,8 +154,7 @@ def render_ocr_mode():
                 use_container_width=True
             )
 
-        # --- Dual View ---
-        st.markdown("<br>", unsafe_allow_html=True) # เว้นบรรทัดนิดนึง
+        st.markdown("<br>", unsafe_allow_html=True)
         col_left_view, col_right_view = st.columns([1, 1])
         curr_idx = st.session_state['current_page_index']
         
@@ -176,11 +166,10 @@ def render_ocr_mode():
         with col_right_view:
             st.success("📝 ผลลัพธ์ (Editable Text)")
             if curr_idx < len(st.session_state['ocr_results']):
-                # --- FIX: ปรับความสูงเป็น 800px เพื่อให้ใกล้เคียงหน้า A4 ---
                 edited_text = st.text_area(
                     label="ocr_output",
                     value=st.session_state['ocr_results'][curr_idx],
-                    height=800,  # เพิ่มความสูงตรงนี้
+                    height=800,
                     label_visibility="collapsed",
                     key=f"text_area_{curr_idx}"
                 )
