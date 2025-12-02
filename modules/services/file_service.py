@@ -4,43 +4,38 @@ import io
 from docx import Document
 import pandas as pd
 
-def pdf_to_images(file_bytes):
+def pdf_to_images(file_bytes, dpi=150):
     """แปลง PDF เป็น List ของรูปภาพ"""
     doc = fitz.open(stream=file_bytes, filetype="pdf")
     images = []
-    for page_num in range(len(doc)):
-        page = doc.load_page(page_num)
-        pix = page.get_pixmap(dpi=150)
+    for i in range(len(doc)):
+        page = doc.load_page(i)
+        pix = page.get_pixmap(dpi=dpi)
         img = Image.open(io.BytesIO(pix.tobytes()))
         images.append(img)
     return images
 
-def create_word(text_list):
-    """สร้างไฟล์ Word จาก List ข้อความ"""
+def extract_text_from_pdf(file_bytes):
+    """อ่านข้อความจาก PDF (แบบดั้งเดิม)"""
+    doc = fitz.open(stream=file_bytes, filetype="pdf")
+    text = ""
+    for page in doc:
+        text += page.get_text() + "\n"
+    return text
+
+def create_word_file(text_content):
+    """สร้างไฟล์ Word จากข้อความ"""
     doc = Document()
-    for i, text in enumerate(text_list):
-        doc.add_heading(f'Page {i+1}', level=1)
-        doc.add_paragraph(str(text)) # กันเหนียวแปลงเป็น str
-        doc.add_page_break()
-    
+    # ถ้าเป็น list ให้วนลูป
+    if isinstance(text_content, list):
+        for t in text_content:
+            doc.add_paragraph(str(t))
+            doc.add_page_break()
+    else:
+        # ถ้าเป็น str ก้อนเดียว
+        doc.add_paragraph(str(text_content))
+        
     buffer = io.BytesIO()
     doc.save(buffer)
-    buffer.seek(0)
-    return buffer
-
-def create_excel(data_dict):
-    """สร้างไฟล์ Excel จาก Dict {page_idx: csv_string}"""
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        has_data = False
-        for sheet_name, csv_data in data_dict.items():
-            try:
-                df = pd.read_csv(io.StringIO(csv_data))
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-                has_data = True
-            except:
-                pass
-        if not has_data:
-            pd.DataFrame({"Status": ["No Data"]}).to_excel(writer, sheet_name="Info")
     buffer.seek(0)
     return buffer
