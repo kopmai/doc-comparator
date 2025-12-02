@@ -28,46 +28,52 @@ st.markdown("""
             font-family: 'Kanit', sans-serif !important; 
         }
         
-        /* --- 1. NAVBAR (แถบบนสุด) --- */
-        .top-navbar {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            right: 0; 
-            height: 60px; /* เพิ่มความสูงนิดนึงให้ดูโปร่ง */
-            background-color: #ffffff; 
-            border-bottom: 1px solid #e0e0e0;
-            z-index: 9999; /* อยู่ชั้นล่างกว่า Sidebar */
-            display: flex; 
-            align-items: center; 
-            padding-left: 80px; /* เว้นที่ให้ปุ่ม Hamburger */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        /* --- 2. STREAMLIT HEADER (ปุ่ม Hamburger) --- */
-        header[data-testid="stHeader"] { 
-            background-color: transparent !important; 
-            z-index: 10000 !important; /* ต้องอยู่เหนือ Navbar เพื่อให้กดปุ่มได้ */
-        }
-        div[data-testid="stDecoration"] { display: none; }
-        
-        /* --- 3. SIDEBAR (เมนูซ้าย - แก้ไขจุดนี้) --- */
-        section[data-testid="stSidebar"] { 
-            top: 0px !important;      /* ชนขอบบนสุด */
-            height: 100vh !important; /* สูงเต็มจอ */
-            z-index: 10001 !important; /* อยู่ชั้นสูงสุด! ทับ Navbar ไปเลย */
-            padding-top: 50px !important; /* ดันเนื้อหาเมนูลงมา ไม่ให้ชนขอบบนเกินไป */
-            background-color: #f8f9fa;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1); /* เพิ่มเงาให้ดูมีมิติ */
-        }
-
-        /* --- 4. MAIN CONTENT (เนื้อหาหลัก) --- */
+        /* --- 1. RESET DEFAULT STREAMLIT PADDING --- */
+        /* ดึงเนื้อหาขึ้นไปชิดขอบบนสุด เพื่อให้ Sticky Navbar ทำงานได้เต็มที่ */
         .block-container { 
-            padding-top: 80px !important; /* ดันเนื้อหาลงมาหลบ Navbar */
+            padding-top: 0px !important;
             padding-bottom: 2rem !important; 
         }
         
-        /* --- Styles อื่นๆ --- */
+        /* ซ่อนแถบสีรุ้งด้านบน */
+        div[data-testid="stDecoration"] { display: none; }
+        
+        /* ปรับ Header เดิมให้ใส และอยู่เหนือ Navbar ของเรา (เพื่อให้กดปุ่ม Hamburger ได้) */
+        header[data-testid="stHeader"] { 
+            background-color: transparent !important; 
+            z-index: 1000 !important; 
+        }
+
+        /* --- 2. STICKY NAVBAR (พระเอกของงานนี้) --- */
+        .top-navbar {
+            position: sticky; /* เปลี่ยนจาก fixed เป็น sticky */
+            top: 0;           /* เกาะติดขอบบนเวลาเลื่อนลง */
+            z-index: 999;     /* อยู่เหนือเนื้อหาปกติ */
+            
+            background-color: #ffffff; 
+            height: 60px;
+            border-bottom: 1px solid #e0e0e0;
+            
+            display: flex; 
+            align-items: center; 
+            
+            /* เว้นซ้าย 60px ให้ปุ่ม Hamburger (เพราะปุ่มมันลอยอยู่ตำแหน่งเดิม) */
+            padding-left: 60px; 
+            
+            width: 100%;
+            margin-bottom: 20px; /* เว้นระยะห่างจากเนื้อหาด้านล่าง */
+        }
+        
+        /* --- 3. SIDEBAR (ปรับให้เต็มจอสวยๆ) --- */
+        section[data-testid="stSidebar"] { 
+            top: 0px !important;
+            height: 100vh !important;
+            padding-top: 50px !important; /* ดันเมนูลงมานิดนึง */
+            background-color: #f8f9fa;
+            box-shadow: 1px 0 5px rgba(0,0,0,0.05);
+        }
+
+        /* --- Styles อื่นๆ คงเดิม --- */
         .navbar-logo { 
             font-size: 22px; font-weight: 600; color: #0d6efd;
             display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
@@ -84,7 +90,6 @@ st.markdown("""
         .match-badge { background-color: #0d6efd; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; }
         textarea { font-family: 'JetBrains Mono', monospace !important; font-size: 14px !important; }
         
-        /* Option Menu Style */
         .nav-link-selected { font-weight: 600 !important; }
     </style>
     
