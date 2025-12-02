@@ -1,5 +1,7 @@
 import streamlit as st
-from modules.utils import get_logs_dataframe
+# --- FIX: แก้ Import ให้ชี้ไปที่ services ---
+from modules.services.utils import get_logs_dataframe 
+# ----------------------------------------
 
 def render_settings_page():
     st.markdown("## 📜 ประวัติการใช้งาน (History Logs)")
