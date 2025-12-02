@@ -19,85 +19,67 @@ st.set_page_config(layout="wide", page_title="Smart Document - Intelligent Platf
 
 st.markdown("""
     <style>
-        /* Import Fonts */
+        /* ... (Import Fonts เหมือนเดิม) ... */
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 
-        /* Global Font */
         html, body, [class*="css"], font, button, input, textarea, div { 
             font-family: 'Kanit', sans-serif !important; 
         }
         
-        /* --- 1. RESET DEFAULT STREAMLIT PADDING --- */
-        /* ดึงเนื้อหาขึ้นไปชิดขอบบนสุด เพื่อให้ Sticky Navbar ทำงานได้เต็มที่ */
-        .block-container { 
-            padding-top: 0px !important;
-            padding-bottom: 2rem !important; 
-        }
-        
-        /* ซ่อนแถบสีรุ้งด้านบน */
-        div[data-testid="stDecoration"] { display: none; }
-        
-        /* ปรับ Header เดิมให้ใส และอยู่เหนือ Navbar ของเรา (เพื่อให้กดปุ่ม Hamburger ได้) */
-        header[data-testid="stHeader"] { 
-            background-color: transparent !important; 
-            z-index: 1000 !important; 
-        }
-
-        /* --- 2. STICKY NAVBAR (พระเอกของงานนี้) --- */
+        /* --- 1. NAVBAR --- */
         .top-navbar {
-            position: sticky; /* เปลี่ยนจาก fixed เป็น sticky */
-            top: 0;           /* เกาะติดขอบบนเวลาเลื่อนลง */
-            z-index: 999;     /* อยู่เหนือเนื้อหาปกติ */
-            
-            background-color: #ffffff; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
             height: 60px;
+            background-color: #ffffff; 
             border-bottom: 1px solid #e0e0e0;
-            
+            z-index: 9999; 
             display: flex; 
             align-items: center; 
-            
-            /* เว้นซ้าย 60px ให้ปุ่ม Hamburger (เพราะปุ่มมันลอยอยู่ตำแหน่งเดิม) */
-            padding-left: 60px; 
-            
-            width: 100%;
-            margin-bottom: 20px; /* เว้นระยะห่างจากเนื้อหาด้านล่าง */
+            padding-left: 80px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+        
+        /* --- 2. HEADER --- */
+        header[data-testid="stHeader"] { 
+            background-color: transparent !important; 
+            z-index: 10000 !important; 
+        }
+        div[data-testid="stDecoration"] { display: none; }
         
         /* --- 3. SIDEBAR --- */
         section[data-testid="stSidebar"] { 
-            top: 0px !important;
-            height: 100vh !important;
-            z-index: 10001 !important;
+            top: 0px !important;      
+            height: 100vh !important; 
+            z-index: 10001 !important; 
+            padding-top: 50px !important; 
             background-color: #f8f9fa;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            
-            /* แก้ตรงนี้: ลด padding ด้านบนลง (เดิมอาจจะ 50px หรือ auto) */
-            padding-top: 0px !important; 
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
         }
 
-        /* เพิ่มตัวนี้: ดันเนื้อหาข้างใน Sidebar ขึ้นไปอีก */
-        section[data-testid="stSidebar"] > div {
-            padding-top: 0rem !important;
+        /* --- 4. MAIN CONTENT (พระเอกของการแก้ครั้งนี้) --- */
+        .block-container { 
+            /* แก้จาก 80px เหลือ 55px (ให้พอดีกับ Navbar 60px - Margin ธรรมชาติของ Streamlit) */
+            padding-top: 55px !important; 
+            padding-bottom: 2rem !important; 
         }
-
-        /* --- Styles อื่นๆ คงเดิม --- */
-        .navbar-logo { 
-            font-size: 22px; font-weight: 600; color: #0d6efd;
-            display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
+        
+        /* ลบ Margin ส่วนเกินของ Element ตัวแรกสุด (เช่น Expander) ให้ชิดขึ้นไปอีก */
+        .block-container > div:first-child {
+            margin-top: 0px !important;
+            padding-top: 0px !important;
         }
-        .navbar-tagline {
-            font-size: 14px; color: #6c757d; margin-left: 15px; font-weight: 300;
-            border-left: 1px solid #dee2e6; padding-left: 15px;
-        }
-
-        div[data-baseweb="base-input"], div[data-baseweb="textarea"] { 
-            border: 1px solid #ced4da !important; border-radius: 8px !important; background-color: #ffffff !important; 
-        }
+        
+        /* ... (Styles อื่นๆ คงเดิม) ... */
+        .navbar-logo { font-size: 22px; font-weight: 600; color: #0d6efd; display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px; }
+        .navbar-tagline { font-size: 14px; color: #6c757d; margin-left: 15px; font-weight: 300; border-left: 1px solid #dee2e6; padding-left: 15px; }
+        div[data-baseweb="base-input"], div[data-baseweb="textarea"] { border: 1px solid #ced4da !important; border-radius: 8px !important; background-color: #ffffff !important; }
         .css-card { background-color: white; padding: 1rem 1.5rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef0f2; margin-top: -15px; }
         .match-badge { background-color: #0d6efd; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; }
         textarea { font-family: 'JetBrains Mono', monospace !important; font-size: 14px !important; }
-        
         .nav-link-selected { font-weight: 600 !important; }
     </style>
     
@@ -108,7 +90,6 @@ st.markdown("""
         </div>
     </div>
 """, unsafe_allow_html=True)
-
 # --- 2. SIDEBAR (MENU) ---
 with st.sidebar:
     
@@ -175,5 +156,6 @@ elif app_mode == "เปรียบเทียบโค้ด":
 
 elif app_mode == "ตั้งค่า & ประวัติ":
     render_settings_page()
+
 
 
