@@ -73,7 +73,6 @@ st.markdown("""
             box-shadow: 2px 0 10px rgba(0,0,0,0.1);
             
             /* แก้ตรงนี้: ลด padding ด้านบนลง (เดิมอาจจะ 50px หรือ auto) */
-            padding-top: 10px !important; 
             padding-top: 0px !important; 
         }
 
@@ -176,3 +175,4 @@ elif app_mode == "เปรียบเทียบโค้ด":
 
 elif app_mode == "ตั้งค่า & ประวัติ":
     render_settings_page()
+
