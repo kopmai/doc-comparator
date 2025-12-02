@@ -1,6 +1,6 @@
 import streamlit as st
-from modules.loader import DocumentLoader
-from modules.comparator import TextComparator
+from modules.services.loader import DocumentLoader
+from modules.services.comparator import TextComparator
 import streamlit.components.v1 as components
 
 def render_document_compare_mode():
