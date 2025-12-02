@@ -1,16 +1,17 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-# Import Views
-from modules.loader import DocumentLoader
-from modules.comparator import TextComparator 
-from modules.code_view import render_code_compare_mode
-from modules.spell_check_view import render_spell_check_mode
-from modules.ocr_view import render_ocr_mode
-from modules.document_view import render_document_compare_mode
-from modules.quick_convert_view import render_quick_convert_mode
-from modules.settings_view import render_settings_page
-# ลบ summarize_view ออกแล้ว
+# --- UPDATE IMPORTS: เรียกจากโฟลเดอร์ views/ และ services/ ---
+from modules.services.loader import DocumentLoader
+from modules.services.comparator import TextComparator 
+
+from modules.views.code_view import render_code_compare_mode
+from modules.views.spell_check_view import render_spell_check_mode
+from modules.views.ocr_view import render_ocr_mode
+from modules.views.document_view import render_document_compare_mode
+from modules.views.quick_convert_view import render_quick_convert_mode
+from modules.views.settings_view import render_settings_page
+# -----------------------------------------------------------
 
 # --- 1. CONFIG & STYLES ---
 st.set_page_config(layout="wide", page_title="Smart Document - Intelligent Platform", page_icon="📑")
