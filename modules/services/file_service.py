@@ -1,40 +1,37 @@
 import fitz  # PyMuPDF
-from PIL import Image
-import io
 from docx import Document
-import pandas as pd
-
-def pdf_to_images(file_bytes, dpi=150):
-    """แปลง PDF เป็น List ของรูปภาพ"""
-    doc = fitz.open(stream=file_bytes, filetype="pdf")
-    images = []
-    for i in range(len(doc)):
-        page = doc.load_page(i)
-        pix = page.get_pixmap(dpi=dpi)
-        img = Image.open(io.BytesIO(pix.tobytes()))
-        images.append(img)
-    return images
+import io
 
 def extract_text_from_pdf(file_bytes):
-    """อ่านข้อความจาก PDF (แบบดั้งเดิม)"""
-    doc = fitz.open(stream=file_bytes, filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text() + "\n"
-    return text
+    """อ่านข้อความจากไฟล์ PDF"""
+    try:
+        doc = fitz.open(stream=file_bytes, filetype="pdf")
+        text = ""
+        for page in doc:
+            text += page.get_text() + "\n"
+        return text
+    except Exception as e:
+        return f"Error reading PDF: {e}"
 
-def create_word_file(text_content):
-    """สร้างไฟล์ Word จากข้อความ"""
+def extract_text_from_docx(file_obj):
+    """อ่านข้อความจากไฟล์ Word"""
+    try:
+        doc = Document(file_obj)
+        full_text = []
+        for para in doc.paragraphs:
+            full_text.append(para.text)
+        return '\n'.join(full_text)
+    except Exception as e:
+        return f"Error reading Docx: {e}"
+
+def create_word_file(content):
+    """สร้างไฟล์ Word เพื่อดาวน์โหลด"""
     doc = Document()
-    # ถ้าเป็น list ให้วนลูป
-    if isinstance(text_content, list):
-        for t in text_content:
-            doc.add_paragraph(str(t))
-            doc.add_page_break()
-    else:
-        # ถ้าเป็น str ก้อนเดียว
-        doc.add_paragraph(str(text_content))
-        
+    # ถ้า content เป็น string ยาวๆ ให้แตกบรรทัด
+    if isinstance(content, str):
+        for line in content.split('\n'):
+            doc.add_paragraph(line)
+    
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
