@@ -64,13 +64,21 @@ st.markdown("""
             margin-bottom: 20px; /* เว้นระยะห่างจากเนื้อหาด้านล่าง */
         }
         
-        /* --- 3. SIDEBAR (ปรับให้เต็มจอสวยๆ) --- */
+        /* --- 3. SIDEBAR --- */
         section[data-testid="stSidebar"] { 
             top: 0px !important;
             height: 100vh !important;
-            padding-top: 50px !important; /* ดันเมนูลงมานิดนึง */
+            z-index: 10001 !important;
             background-color: #f8f9fa;
-            box-shadow: 1px 0 5px rgba(0,0,0,0.05);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            
+            /* แก้ตรงนี้: ลด padding ด้านบนลง (เดิมอาจจะ 50px หรือ auto) */
+            padding-top: 10px !important; 
+        }
+
+        /* เพิ่มตัวนี้: ดันเนื้อหาข้างใน Sidebar ขึ้นไปอีก */
+        section[data-testid="stSidebar"] > div {
+            padding-top: 0rem !important;
         }
 
         /* --- Styles อื่นๆ คงเดิม --- */
@@ -167,3 +175,4 @@ elif app_mode == "เปรียบเทียบโค้ด":
 
 elif app_mode == "ตั้งค่า & ประวัติ":
     render_settings_page()
+
