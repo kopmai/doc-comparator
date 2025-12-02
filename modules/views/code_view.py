@@ -1,5 +1,5 @@
 import streamlit as st
-from modules.comparator import TextComparator
+from modules.services.comparator import TextComparator
 import streamlit.components.v1 as components
 
 def clear_code_inputs():
